@@ -1,26 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@600&family=Montserrat:wght@300;500;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #1C2E45;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #1C2E45;
+  --muted: #F8F5F2;
+  --muted-foreground: #666666;
+  --accent: #946b56;
+  --accent-foreground: #FFFFFF;
+  --contrast: #DED4C4;
+  --destructive: #D9534F;
+  --border: #E7E0DA;
+  --input: #E7E0DA;
+  --ring: #1C2E45;
+  --background: #F8F5F2;
+  --foreground: #333333;
+  --surface: #F6F4F0;
+  --popover: #FFFFFF;
+  --popover-foreground: #333333;
+  
+  --font-heading: 'Lora', serif;
+  --font-body: 'Montserrat', sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
 }
 
 body {
-  background: var(--background);
+  font-family: var(--font-body);
+  font-weight: 500;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+}
+
+h1, h2, h3, h4, h5, h6, .heading-font {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.button, .btn, button, [role="button"] {
+  font-weight: 300 !important;
+  letter-spacing: 0.5px;
+}
+
+.text-medium {
+  font-weight: 500;
+}
+
+.text-semibold {
+  font-weight: 700;
+}
+
+/* Text Selection Styles */
+::selection {
+  background-color: #DED4C4;
+  color: #1C2E45;
+}
+
+::-moz-selection {
+  background-color: #DED4C4;
+  color: #1C2E45;
+}
+
+/* Input field text selection - override browser defaults */
+input[type="text"]::selection,
+input[type="email"]::selection,
+input[type="password"]::selection,
+input[type="search"]::selection,
+input::selection,
+textarea::selection {
+  background-color: #DED4C4 !important;
+  color: #1C2E45 !important;
+}
+
+input[type="text"]::-moz-selection,
+input[type="email"]::-moz-selection,
+input[type="password"]::-moz-selection,
+input[type="search"]::-moz-selection,
+input::-moz-selection,
+textarea::-moz-selection {
+  background-color: #DED4C4 !important;
+  color: #1C2E45 !important;
+}
+
+/* Also target the input component specifically */
+input[data-slot="input"]::selection {
+  background-color: #DED4C4 !important;
+  color: #1C2E45 !important;
+}
+
+input[data-slot="input"]::-moz-selection {
+  background-color: #DED4C4 !important;
+  color: #1C2E45 !important;
 }

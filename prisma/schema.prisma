@@ -1,0 +1,18 @@
+// This is your Prisma schema file for the landing page
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model NewsletterSubscriber {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  subscribed_date   DateTime  @default(now())
+  unsubscribed_date DateTime?
+
+  @@index([email])
+}
