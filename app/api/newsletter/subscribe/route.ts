@@ -57,7 +57,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
-    console.error('Error subscribing to newsletter:', error)
+    // Log full error details for debugging (visible in Vercel logs)
+    console.error('Error subscribing to newsletter:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+    })
     
     // Handle unique constraint violation
     if (error?.code === 'P2002') {
@@ -72,6 +78,15 @@ export async function POST(request: NextRequest) {
       console.error('Database connection error:', error)
       return NextResponse.json(
         { error: 'Database connection failed. Please check your DATABASE_URL.' },
+        { status: 500 }
+      )
+    }
+
+    // Handle missing database table (table doesn't exist)
+    if (error?.code === 'P2021' || error?.message?.includes('does not exist')) {
+      console.error('Database table missing error:', error)
+      return NextResponse.json(
+        { error: 'Database not set up. Please run migrations.' },
         { status: 500 }
       )
     }

@@ -51,8 +51,24 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-[#DED4C4]/20 rounded-2xl mb-6 backdrop-blur-sm">
-              <Sparkles className="w-10 h-10 text-[#DED4C4]" />
+            <div className="relative inline-flex items-center justify-center mb-8">
+              {/* Decorative background circle */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#DED4C4]/20 to-[#946b56]/20 rounded-full blur-xl w-32 h-32 -z-10"></div>
+              {/* Logo container with subtle border */}
+              <div className="relative inline-flex items-center justify-center p-4 bg-[#DED4C4]/10 rounded-2xl backdrop-blur-sm border border-[#DED4C4]/20 shadow-lg">
+                <img 
+                  src="/TransparentLogo.png" 
+                  alt="Bridged Logo" 
+                  className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg"
+                />
+              </div>
+              {/* Decorative sparkles around logo */}
+              <div className="absolute -top-2 -right-2">
+                <Sparkles className="w-5 h-5 text-[#DED4C4]/60 animate-pulse" />
+              </div>
+              <div className="absolute -bottom-2 -left-2">
+                <Sparkles className="w-4 h-4 text-[#DED4C4]/40 animate-pulse delay-300" />
+              </div>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight opacity-90 heading-font">
               Bridged
