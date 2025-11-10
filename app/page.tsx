@@ -51,25 +51,48 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="relative inline-flex items-center justify-center mb-8">
-              {/* Decorative background circle */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#DED4C4]/20 to-[#946b56]/20 rounded-full blur-xl w-32 h-32 -z-10"></div>
-              {/* Logo container with subtle border */}
-              <div className="relative inline-flex items-center justify-center p-4 bg-[#DED4C4]/10 rounded-2xl backdrop-blur-sm border border-[#DED4C4]/20 shadow-lg">
+            {/* Enhanced Logo Presentation */}
+            <div className="relative inline-flex items-center justify-center mb-10 group">
+              {/* Animated gradient rings */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-[#DED4C4]/20 animate-spin-slow"></div>
+                <div className="absolute w-28 h-28 md:w-36 md:h-36 rounded-full border border-[#946b56]/30 animate-spin-slow-reverse"></div>
+              </div>
+              
+              {/* Glowing background effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#DED4C4]/30 via-[#946b56]/20 to-[#DED4C4]/30 rounded-full blur-2xl w-40 h-40 md:w-48 md:h-48 opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+              
+              {/* Main logo container with premium styling */}
+              <div className="relative z-10 inline-flex items-center justify-center p-6 md:p-8 bg-gradient-to-br from-[#DED4C4]/15 via-white/10 to-[#DED4C4]/15 rounded-3xl backdrop-blur-md border-2 border-[#DED4C4]/30 shadow-2xl transform transition-all duration-500 group-hover:scale-105 group-hover:shadow-[0_0_40px_rgba(222,212,196,0.3)]">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
                 <img 
                   src="/TransparentLogo.png" 
                   alt="Bridged Logo" 
-                  className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg"
+                  className="relative z-10 w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-2xl filter brightness-110"
                 />
               </div>
-              {/* Decorative sparkles around logo */}
-              <div className="absolute -top-2 -right-2">
-                <Sparkles className="w-5 h-5 text-[#DED4C4]/60 animate-pulse" />
+              
+              {/* Floating decorative elements */}
+              <div className="absolute -top-4 -right-4 md:-top-6 md:-right-6">
+                <div className="relative">
+                  <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-[#DED4C4] animate-pulse" />
+                  <div className="absolute inset-0 bg-[#DED4C4]/20 rounded-full blur-md animate-ping"></div>
+                </div>
               </div>
-              <div className="absolute -bottom-2 -left-2">
-                <Sparkles className="w-4 h-4 text-[#DED4C4]/40 animate-pulse delay-300" />
+              <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6">
+                <div className="relative">
+                  <Sparkles className="w-5 h-5 md:w-7 md:h-7 text-[#946b56] animate-pulse delay-300" />
+                  <div className="absolute inset-0 bg-[#946b56]/20 rounded-full blur-md animate-ping delay-300"></div>
+                </div>
+              </div>
+              <div className="absolute top-1/2 -right-8 md:-right-12 transform -translate-y-1/2">
+                <div className="w-2 h-2 rounded-full bg-[#DED4C4] animate-pulse delay-500"></div>
+              </div>
+              <div className="absolute top-1/2 -left-8 md:-left-12 transform -translate-y-1/2">
+                <div className="w-2 h-2 rounded-full bg-[#946b56] animate-pulse delay-700"></div>
               </div>
             </div>
+            
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight opacity-90 heading-font">
               Bridged
               <span className="text-[#DED4C4]"> is Coming Soon</span>
