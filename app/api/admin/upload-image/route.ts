@@ -3,7 +3,7 @@ import { getAdminSession } from '@/lib/admin-auth'
 import { prisma } from '@/lib/db'
 
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+const ALLOWED_TYPES: string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MIME_TO_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
