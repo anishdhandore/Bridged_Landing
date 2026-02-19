@@ -9,8 +9,8 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 function rewriteImageUrlsForEmail(html: string): string {
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://bridgedplatform.com').replace(/\/$/, '')
   return html.replace(
-    /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/newsletter-images\/([a-zA-Z0-9_-]+)/g,
-    `${baseUrl}/api/newsletter-images/$3`
+    /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/newsletter-images\/([a-zA-Z0-9_-]+)(\.(jpg|jpeg|png|gif|webp))?/gi,
+    `${baseUrl}/api/newsletter-images/$3$4`
   )
 }
 

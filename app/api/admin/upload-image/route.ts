@@ -3,7 +3,13 @@ import { getAdminSession } from '@/lib/admin-auth'
 import { prisma } from '@/lib/db'
 
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+}
 
 function getBaseUrl(request: NextRequest): string {
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
@@ -44,7 +50,8 @@ export async function POST(request: NextRequest) {
     })
 
     const baseUrl = getBaseUrl(request)
-    const url = `${baseUrl}/api/newsletter-images/${image.id}`
+    const ext = MIME_TO_EXT[file.type] || 'jpg'
+    const url = `${baseUrl}/api/newsletter-images/${image.id}.${ext}`
 
     return NextResponse.json({ url })
   } catch (err) {
