@@ -21,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    const data = Buffer.isBuffer(image.data) ? image.data : Buffer.from(image.data as ArrayBuffer)
+    const data = Buffer.isBuffer(image.data) ? image.data : Buffer.from(image.data as unknown as ArrayBuffer)
     return new NextResponse(data, {
       headers: {
         'Content-Type': image.mimeType,
