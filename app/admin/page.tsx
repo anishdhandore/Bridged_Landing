@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Send, LogOut, Users, Loader2, Eye, EyeOff, Search, X } from 'lucide-react'
+import { Mail, Send, LogOut, Users, Loader2, Eye, EyeOff, Search, X, Upload } from 'lucide-react'
 import { toast } from 'sonner'
+import { buildNewsletterHtml, type NewsletterTemplateData } from '@/lib/newsletter-template'
 
 export default function AdminPage() {
   const [email, setEmail] = useState('')
@@ -17,13 +18,76 @@ export default function AdminPage() {
   const [adminEmail, setAdminEmail] = useState<string | null>(null)
   const [subscriberCount, setSubscriberCount] = useState<number | null>(null)
   const [subject, setSubject] = useState('')
-  const [html, setHtml] = useState('')
+  const [templateData, setTemplateData] = useState<NewsletterTemplateData>({
+    welcomeLine: 'Welcome to the',
+    mainTitle: 'BRIDGED INSIDER',
+    heroImageUrl: 'https://images.unsplash.com/photo-1521412644187-c49fa049e84d?q=80&w=600&auto=format&fit=crop',
+    year: new Date().getFullYear().toString(),
+    welcomeBadgeText: 'WELCOME',
+    headline: 'THE END OF ONE-OFF NIL.',
+    subheadline: 'BEGINNING OF CAREER PIPELINES.',
+    introCopy: "NIL opened the door. But it didn't build a pathway.",
+    athletesLabel: 'Athletes,',
+    athletesCopy: "You practice for hours.\nYou study film.\nYou show up disciplined every day. But when it comes to your career? There's no structured system helping you prepare.",
+    companiesLabel: 'Companies,',
+    companiesCopy: "You're looking for motivated, coachable, high-performance talent.\nThey're already building the discipline your company hires for.\nWhat if athletes didn't just promote your brand but worked inside it?",
+    heroTagline: 'All managed and handled by one platform!',
+    whatIsBridgedTitle: 'WHAT IS BRIDGED?',
+    whatIsBridgedSubtitle: "YOU'RE EARLY. THAT MATTERS.",
+    whatIsBridgedP1: 'Get ready to turn NIL-style marketing budgets into structured, paid internships for student-athletes.',
+    whatIsBridgedP2: 'Instead of one-time posts, companies invest in guided, project-based work that builds real experience. Where we manage the vetting, structure, deliverables, and reporting ensuring measurable value on both sides.',
+    whatIsBridgedP3: 'Athletes gain resume-ready experience. Companies build a disciplined, high-performance talent pipeline.',
+    founderSectionTitle: 'BUILT BY STUDENT ATHLETES.',
+    founderImageUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=600&auto=format&fit=crop',
+    founderName: 'CO-Founder Natalia Bowles',
+    founderQuote: "As a college athlete, I saw teammates struggle after their playing days ended. We give our all to the game, but no one prepares us for what's next. Every athlete deserves more than a season, they deserve a future. That's why we created a platform connecting athletes to opportunities, mentorship, and purpose beyond the field.",
+    lookoutTitle: 'BE ON THE LOOKOUT FOR …',
+    interestedCardUrl: 'https://images.unsplash.com/photo-1521412644187-c49fa049e84d?q=80&w=600&auto=format&fit=crop',
+    whatsComingTitle: "WHAT'S COMING\nBEFORE LAUNCH.",
+    whatsComingIntro: "Over the next few weeks, we'll be sharing:",
+    whatsComingBullets: 'Athlete spotlight features\nBrand onboarding updates\nEarly internship pilot opportunities\nFounding member access\nMasterclass guest appearances\nLaunch date announcement',
+    whatsComingClosing: "We are building this intentionally.\nAnd we're building it for longevity.",
+    partnershipTitle: 'PARTNERSHIP SPOTLIGHTS',
+    partnershipSubtitle: "WE'RE PROUD TO BEGIN ONBOARDING EARLY PARTNERS WHO BELIEVE IN THE FUTURE OF ATHLETE-DRIVEN TALENT.",
+    partner1Name: 'ZENITH PREP ACADEMY',
+    partner1Founder: 'FOUNDER DOMINIC HUERTA',
+    partner1Copy: 'Zenith Prep Academy has been ranked multiple times as the #1 College Consulting & Education Company in America. Through this partnership, Bridged expands its pipeline to academically driven, career-focused students early in their journey.',
+    partner1LogoUrl: 'https://dummyimage.com/140x60/1f2d3d/fff&text=ZENITH',
+    partner2Name: 'REGGIE STEPHENS',
+    partner2Founder: 'FOUNDER REGGIE STEPHENS X NFL',
+    partner2Copy: 'Founded by former NFL player Reggie Stephens, the Reggie Stephens Foundation empowers youth through sports, education, mentorship, and community programming — aligning directly with Bridged\'s mission to prepare the next generation for long-term career success.',
+    partner2LogoUrl: 'https://dummyimage.com/140x60/1f2d3d/fff&text=RSF',
+    footerHandle: '@bridgedplatform',
+    contactEmail: 'nbowles@bridged.agency',
+    websiteUrl: 'www.bridgedplatform.com',
+  })
   const [sending, setSending] = useState(false)
   const [sendMode, setSendMode] = useState<'all' | 'selected'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<string[]>([])
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
   const [searching, setSearching] = useState(false)
+  const [uploadingField, setUploadingField] = useState<string | null>(null)
+
+  const handleImageUpload = async (field: keyof NewsletterTemplateData, file: File) => {
+    setUploadingField(field)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.details ?? data.error ?? 'Upload failed')
+      setTemplateData((prev) => ({ ...prev, [field]: data.url }))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploadingField(null)
+    }
+  }
 
   useEffect(() => {
     fetch('/api/admin/me', { credentials: 'include' })
@@ -112,10 +176,18 @@ export default function AdminPage() {
     toast.success('Logged out')
   }
 
+  const newsletterHtml = useMemo(() => {
+    return buildNewsletterHtml(templateData)
+  }, [templateData])
+
   const handleSendNewsletter = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!subject.trim() || !html.trim()) {
-      toast.error('Subject and message are required')
+    if (!subject.trim()) {
+      toast.error('Subject is required')
+      return
+    }
+    if (!templateData.heroImageUrl.trim() || !templateData.headline.trim()) {
+      toast.error('Hero image and headline are required')
       return
     }
     if (sendMode === 'selected' && selectedRecipients.length === 0) {
@@ -130,7 +202,7 @@ export default function AdminPage() {
         credentials: 'include',
         body: JSON.stringify({
           subject: subject.trim(),
-          html: html.trim(),
+          html: newsletterHtml,
           recipients: sendMode === 'selected' ? selectedRecipients : undefined,
         }),
       })
@@ -141,7 +213,6 @@ export default function AdminPage() {
       }
       toast.success(`Newsletter sent to ${data.sent} subscribers!`)
       setSubject('')
-      setHtml('')
       setSearchQuery('')
       setSearchResults([])
       setSelectedRecipients([])
@@ -381,18 +452,382 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1C2E45] mb-2">
-                  Message (HTML)
+                  Newsletter content (Canva template)
                 </label>
-                <textarea
-                  placeholder="<p>Hello subscribers!</p><p>Your update here...</p>"
-                  value={html}
-                  onChange={(e) => setHtml(e.target.value)}
-                  className="w-full min-h-[200px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
-                  required
-                />
-                <p className="text-xs text-[#666666] mt-1">
-                  You can use simple HTML: &lt;p&gt;, &lt;a href="..."&gt;, &lt;strong&gt;, etc.
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="border-t border-[#E7E0DA] pt-4 mt-0">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 1</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Field 1</label>
+                        <Input type="text" value={templateData.welcomeLine} onChange={(e) => setTemplateData((prev) => ({ ...prev, welcomeLine: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. Welcome to the" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Field 2</label>
+                        <Input type="text" value={templateData.mainTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, mainTitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. BRIDGED INSIDER" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 2</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Image</label>
+                    <label className="inline-flex items-center gap-2 cursor-pointer h-10 px-4 rounded-md border border-[#E7E0DA] hover:bg-[#F8F5F2] text-sm">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          if (f) handleImageUpload('heroImageUrl', f)
+                          e.target.value = ''
+                        }}
+                      />
+                      {uploadingField === 'heroImageUrl' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Upload image
+                    </label>
+                    {templateData.heroImageUrl?.includes('/api/newsletter-images/') && (
+                      <p className="text-xs text-green-600 mt-1.5">Image uploaded</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Year</label>
+                    <Input type="text" placeholder="e.g. 2026" value={templateData.year} onChange={(e) => setTemplateData((prev) => ({ ...prev, year: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Badge</label>
+                    <Input type="text" value={templateData.welcomeBadgeText} onChange={(e) => setTemplateData((prev) => ({ ...prev, welcomeBadgeText: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. WELCOME" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Headline</label>
+                    <Input
+                      type="text"
+                      placeholder="Main headline"
+                      value={templateData.headline}
+                      onChange={(e) => setTemplateData((prev) => ({ ...prev, headline: e.target.value }))}
+                      className="border-[#E7E0DA] focus:border-[#946b56]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Subheadline</label>
+                    <Input
+                      type="text"
+                      placeholder="Secondary headline"
+                      value={templateData.subheadline}
+                      onChange={(e) => setTemplateData((prev) => ({ ...prev, subheadline: e.target.value }))}
+                      className="border-[#E7E0DA] focus:border-[#946b56]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Intro copy</label>
+                    <textarea
+                      placeholder="Opening paragraph"
+                      value={templateData.introCopy}
+                      onChange={(e) => setTemplateData((prev) => ({ ...prev, introCopy: e.target.value }))}
+                      className="w-full min-h-[120px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Label 1</label>
+                    <Input type="text" value={templateData.athletesLabel} onChange={(e) => setTemplateData((prev) => ({ ...prev, athletesLabel: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. Athletes," />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Copy 1</label>
+                    <textarea
+                      placeholder="Body copy under Athletes label"
+                      value={templateData.athletesCopy}
+                      onChange={(e) => setTemplateData((prev) => ({ ...prev, athletesCopy: e.target.value }))}
+                      className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Label 2</label>
+                    <Input type="text" value={templateData.companiesLabel} onChange={(e) => setTemplateData((prev) => ({ ...prev, companiesLabel: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. Companies," />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Copy 2</label>
+                    <textarea
+                      placeholder="Body copy under Companies label"
+                      value={templateData.companiesCopy}
+                      onChange={(e) => setTemplateData((prev) => ({ ...prev, companiesCopy: e.target.value }))}
+                      className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1C2E45] mb-2">Tagline</label>
+                    <Input type="text" value={templateData.heroTagline} onChange={(e) => setTemplateData((prev) => ({ ...prev, heroTagline: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. All managed and handled by one platform!" />
+                  </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 3</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Title</label>
+                        <Input type="text" value={templateData.whatIsBridgedTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatIsBridgedTitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. WHAT IS BRIDGED?" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Subtitle</label>
+                        <Input type="text" value={templateData.whatIsBridgedSubtitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatIsBridgedSubtitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. YOU'RE EARLY. THAT MATTERS." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Paragraph 1</label>
+                        <textarea
+                          placeholder="First paragraph"
+                          value={templateData.whatIsBridgedP1}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, whatIsBridgedP1: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Paragraph 2</label>
+                        <textarea
+                          placeholder="Second paragraph"
+                          value={templateData.whatIsBridgedP2}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, whatIsBridgedP2: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Paragraph 3</label>
+                        <textarea
+                          placeholder="Third paragraph"
+                          value={templateData.whatIsBridgedP3}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, whatIsBridgedP3: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 4</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Title</label>
+                        <Input type="text" value={templateData.lookoutTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, lookoutTitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. BE ON THE LOOKOUT FOR …" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Image</label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer h-10 px-4 rounded-md border border-[#E7E0DA] hover:bg-[#F8F5F2] text-sm">
+                          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload('interestedCardUrl', f); e.target.value = '' }} />
+                          {uploadingField === 'interestedCardUrl' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          Upload image
+                        </label>
+                        {templateData.interestedCardUrl?.includes('/api/newsletter-images/') && (
+                          <p className="text-xs text-green-600 mt-1.5">Image uploaded</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 5</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Title</label>
+                        <textarea value={templateData.whatsComingTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatsComingTitle: e.target.value }))} className="w-full min-h-[60px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm" placeholder="One or two lines (Enter for break)" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Intro</label>
+                        <Input type="text" value={templateData.whatsComingIntro} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatsComingIntro: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. Over the next few weeks, we'll be sharing:" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Bullets (one per line)</label>
+                        <textarea value={templateData.whatsComingBullets} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatsComingBullets: e.target.value }))} className="w-full min-h-[120px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm" placeholder="One item per line" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Closing</label>
+                        <textarea value={templateData.whatsComingClosing} onChange={(e) => setTemplateData((prev) => ({ ...prev, whatsComingClosing: e.target.value }))} className="w-full min-h-[60px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm" placeholder="Use Enter for line breaks" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 6</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Title</label>
+                        <Input type="text" value={templateData.founderSectionTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, founderSectionTitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. BUILT BY STUDENT ATHLETES." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Image</label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer h-10 px-4 rounded-md border border-[#E7E0DA] hover:bg-[#F8F5F2] text-sm">
+                          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload('founderImageUrl', f); e.target.value = '' }} />
+                          {uploadingField === 'founderImageUrl' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          Upload image
+                        </label>
+                        {templateData.founderImageUrl?.includes('/api/newsletter-images/') && (
+                          <p className="text-xs text-green-600 mt-1.5">Image uploaded</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Name</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. CO-Founder Name"
+                          value={templateData.founderName}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, founderName: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Quote</label>
+                        <textarea
+                          placeholder="Quote from the founder"
+                          value={templateData.founderQuote}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, founderQuote: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 7</h4>
+                    <div className="grid grid-cols-1 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Title</label>
+                        <Input type="text" value={templateData.partnershipTitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, partnershipTitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. PARTNERSHIP SPOTLIGHTS" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Subtitle</label>
+                        <Input type="text" value={templateData.partnershipSubtitle} onChange={(e) => setTemplateData((prev) => ({ ...prev, partnershipSubtitle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. WE'RE PROUD TO BEGIN..." />
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Subsection 7.1</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Name</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. ZENITH PREP ACADEMY"
+                          value={templateData.partner1Name}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner1Name: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Attribution</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. FOUNDER NAME"
+                          value={templateData.partner1Founder}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner1Founder: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Copy</label>
+                        <textarea
+                          placeholder="Description of the partnership"
+                          value={templateData.partner1Copy}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner1Copy: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Logo</label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer h-10 px-4 rounded-md border border-[#E7E0DA] hover:bg-[#F8F5F2] text-sm">
+                          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload('partner1LogoUrl', f); e.target.value = '' }} />
+                          {uploadingField === 'partner1LogoUrl' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          Upload image
+                        </label>
+                        {templateData.partner1LogoUrl?.includes('/api/newsletter-images/') && (
+                          <p className="text-xs text-green-600 mt-1.5">Image uploaded</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4 mt-2">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Subsection 7.2</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Name</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. REGGIE STEPHENS"
+                          value={templateData.partner2Name}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner2Name: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Attribution</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. FOUNDER NAME"
+                          value={templateData.partner2Founder}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner2Founder: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Copy</label>
+                        <textarea
+                          placeholder="Description of the partnership"
+                          value={templateData.partner2Copy}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, partner2Copy: e.target.value }))}
+                          className="w-full min-h-[80px] rounded-md border border-[#E7E0DA] bg-white px-3 py-2 text-sm focus:border-[#946b56] focus:outline-none focus:ring-2 focus:ring-[#946b56]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Logo</label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer h-10 px-4 rounded-md border border-[#E7E0DA] hover:bg-[#F8F5F2] text-sm">
+                          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload('partner2LogoUrl', f); e.target.value = '' }} />
+                          {uploadingField === 'partner2LogoUrl' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          Upload image
+                        </label>
+                        {templateData.partner2LogoUrl?.includes('/api/newsletter-images/') && (
+                          <p className="text-xs text-green-600 mt-1.5">Image uploaded</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-[#E7E0DA] pt-4 mt-2">
+                    <h4 className="text-sm font-semibold text-[#1C2E45] mb-3">Section 8</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Handle</label>
+                        <Input type="text" value={templateData.footerHandle} onChange={(e) => setTemplateData((prev) => ({ ...prev, footerHandle: e.target.value }))} className="border-[#E7E0DA] focus:border-[#946b56]" placeholder="e.g. @bridgedplatform" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Email</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. nbowles@bridged.agency"
+                          value={templateData.contactEmail}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, contactEmail: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#1C2E45] mb-2">Website</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. www.bridgedplatform.com"
+                          value={templateData.websiteUrl}
+                          onChange={(e) => setTemplateData((prev) => ({ ...prev, websiteUrl: e.target.value }))}
+                          className="border-[#E7E0DA] focus:border-[#946b56]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-[#666666] mt-2">
+                  Enter your content below — it populates the newsletter template when you send. Use the upload buttons for images. The design (fonts, layout, colors) is fixed. Preview updates live above.
                 </p>
+              </div>
+              <div className="border border-[#E7E0DA] rounded-md bg-white">
+                <div className="px-4 py-2 border-b border-[#E7E0DA] text-sm font-medium text-[#1C2E45]">
+                  Live preview
+                </div>
+                <div className="p-4 bg-[#F8F5F2]">
+                  <div className="bg-white border border-[#E7E0DA] rounded-md overflow-hidden">
+                    <div
+                      className="max-h-[500px] overflow-auto"
+                      dangerouslySetInnerHTML={{ __html: newsletterHtml }}
+                    />
+                  </div>
+                </div>
               </div>
               <Button
                 type="submit"

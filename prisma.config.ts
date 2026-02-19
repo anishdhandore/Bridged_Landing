@@ -1,3 +1,10 @@
+import path from "node:path";
+import { config } from "dotenv";
+
+// Load .env.local (Next.js convention) and .env before Prisma runs
+config({ path: path.resolve(process.cwd(), ".env.local") });
+config({ path: path.resolve(process.cwd(), ".env") });
+
 import { defineConfig } from "prisma/config";
 
 export default defineConfig({

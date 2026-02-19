@@ -5,6 +5,15 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+/** Rewrite localhost newsletter-image URLs to production so images display in emails (Gmail etc block data URIs) */
+function rewriteImageUrlsForEmail(html: string): string {
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://bridgedplatform.com').replace(/\/$/, '')
+  return html.replace(
+    /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/newsletter-images\/([a-zA-Z0-9_-]+)/g,
+    `${baseUrl}/api/newsletter-images/$3`
+  )
+}
+
 export async function POST(request: NextRequest) {
   const session = await getAdminSession()
   if (!session) {
@@ -61,7 +70,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const content = html || (text ? `<pre style="white-space:pre-wrap;font-family:sans-serif;">${text}</pre>` : '')
+    let content = html || (text ? `<pre style="white-space:pre-wrap;font-family:sans-serif;">${text}</pre>` : '')
+    if (content && html) {
+      content = rewriteImageUrlsForEmail(content)
+    }
     const emails = subscribers.map((s) => s.email)
     const from = process.env.RESEND_FROM_NAME
       ? `${process.env.RESEND_FROM_NAME} <${fromEmail}>`

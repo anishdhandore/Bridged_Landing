@@ -1,4 +1,3 @@
-// This is your Prisma schema file for the landing page
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +7,691 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                           String                      @id @default(cuid())
+  email                        String                      @unique
+  full_name                    String?
+  password_hash                String
+  account_type                 String
+  role                         String                      @default("user")
+  is_newsletter_subscriber     Boolean                     @default(false)
+  profile_photo_url            String?
+  resume_url                   String?
+  created_date                 DateTime                    @default(now())
+  updated_date                 DateTime                    @updatedAt
+  sport                        String?
+  school                       String?
+  grad_year                    Int?
+  major                        String?
+  bio                          String?
+  gpa                          Float?
+  social_media_links           Json?
+  date_of_birth                String?
+  region                       String?
+  highlight_reel_url           String?
+  nil_experience               String?
+  minor                        String?
+  double_major                 String?
+  key_courses                  String?
+  languages                    String?
+  future_goals                 String?
+  total_followers              String?
+  instagram                    String?
+  tiktok                       String?
+  twitter                      String?
+  linkedin                     String?
+  snapchat                     String?
+  interests_hobbies            String?
+  strengths_traits             String?
+  email_verification_expires   DateTime?
+  email_verification_token     String?                     @unique
+  email_verified               Boolean                     @default(false)
+  dept_verification_status     String                      @default("pending")
+  admin_verification_status    String                      @default("approved") // 'approved' | 'revoked' - athletes auto-approved, admin can revoke
+  saac_verified                Boolean                    @default(false)    // Optional: SAAC (Student-Athlete Advisory Committee) verification
+  affiliate_applications       AffiliateApplication[]
+  affiliate_commission_payouts AffiliateCommissionPayout[]
+  affiliate_partnerships       AffiliatePartnership[]
+  applications                 Application[]
+  athlete_payouts              AthletePayout[]
+  company_profile              Company?
+  athlete_conversations        Conversation[]              @relation("AthleteConversations")
+  conversation_participants    ConversationParticipant[]
+  digital_signatures           DigitalSignature[]
+  messages                     Message[]
+  model_list_entry             ModelListEntry?
+  partnerships                 Partnership[]               @relation("AthletePartnerships")
+  partnership_reviews_received  PartnershipReview[]         @relation("AthleteReviews")
+  company_reviews              CompanyReview[]              @relation("AthleteCompanyReviews")
+  uploaded_documents           PartnershipDocument[]
+  scheduled_meetings           PartnershipMeeting[]
+  verification_request         VerificationRequest?
+  saac_verification_request   SaacVerificationRequest?
+  hourLogs                     HourLog[]
+  deliverable_attachments      DeliverableAttachment[]
+  partnership_warnings         PartnershipWarning[]
+  user_documents                UserDocument[]
+  user_document_signatures     UserDocumentSignature[]
+  stripe_connect_account_id    String?                     // When set, athlete has completed payout setup to receive money
+
+  @@index([email])
+  @@index([account_type])
+  @@index([dept_verification_status])
+  @@index([email_verified])
+  @@index([admin_verification_status])
+}
+
+model Company {
+  id                       String                   @id @default(cuid())
+  user_id                  String                   @unique
+  company_name             String
+  logo_url                 String?
+  website                  String?
+  description              String?
+  industry                 String?                  // e.g. Technology, Finance, Retail, Sports
+  status                   String                   @default("pending_approval")
+  opportunity_type         String
+  contact_name             String?
+  contact_position         String?
+  contact_email            String
+  created_date             DateTime                 @default(now())
+  updated_date             DateTime                 @updatedAt
+  affiliate_campaigns      AffiliateCampaign[]
+  affiliate_opportunities  AffiliateOpportunity[]
+  affiliate_partnerships  AffiliatePartnership[]
+  applications             Application[]
+  user                     User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscriptions            CompanySubscription?
+  content_partnerships     ContentPartnership[]
+  content_proposals        ContentProposal[]
+  Conversation             Conversation[]
+  jobs                     Job[]
+  partnerships             Partnership[]            @relation("CompanyPartnerships")
+  partnership_applications PartnershipApplication[]
+  partnership_reviews      PartnershipReview[]
+  company_reviews         CompanyReview[]
+  payment_methods          PaymentMethod[]
+
+  @@index([status])
+  @@index([contact_email])
+}
+
+model Partnership {
+  id                         String                @id @default(cuid())
+  type                       String
+  status                     String                @default("pending")
+  athlete_id                 String
+  company_id                 String
+  plan_name                  String?
+  total_stipend              Decimal?              @db.Decimal(10, 2) // Total stipend amount for the role (minimum $250)
+  monthly_stipend            Decimal?              @db.Decimal(10, 2) // Deprecated: kept for backward compatibility
+  start_date                 DateTime?
+  end_date                   DateTime?
+  created_date               DateTime              @default(now())
+  updated_date               DateTime              @updatedAt
+  terminated_at              DateTime?
+  termination_reason         String?
+  terminated_by              String?
+  athlete_approved_extension Boolean               @default(false)
+  athlete_name               String?
+  athlete_payment            Decimal?              @db.Decimal(10, 2) // Total athlete receives (total_stipend * 0.83)
+  bridged_fee                Decimal?              @db.Decimal(10, 2) // Bridged's 17% platform fee
+  company_name               String?
+  extension_months           Int?
+  extension_reason           String?
+  extension_requested        Boolean               @default(false)
+  extension_requested_date   DateTime?
+  extension_status           String?
+  stripe_subscription_id     String?
+  total_monthly_cost         Decimal?              @db.Decimal(10, 2) // Total company pays (total_stipend)
+  onboarding_completed_at    DateTime?
+  onboarding_step            String?
+  payouts                    AthletePayout[]
+  conversation               Conversation?
+  deliverables               Deliverable[]
+  warnings                   PartnershipWarning[]
+  athlete                    User                  @relation("AthletePartnerships", fields: [athlete_id], references: [id])
+  company                    Company               @relation("CompanyPartnerships", fields: [company_id], references: [id])
+  documents                  PartnershipDocument[]
+  meetings                   PartnershipMeeting[]
+  packet                     PartnershipPacket?
+  progress                   PartnershipProgress[]
+  payments                   Payment[]
+  hourLogs                   HourLog[]
+  reviews                    PartnershipReview[]
+  company_review             CompanyReview?
+
+  @@index([athlete_id])
+  @@index([company_id])
+  @@index([status])
+}
+
+model CompanyReview {
+  id                String      @id @default(cuid())
+  partnership_id    String      @unique
+  company_id        String
+  athlete_id        String
+  star_rating       Int         // 1-5
+  written_feedback  String?     @db.Text
+  would_work_again  Boolean     // Would athlete work for this company again
+  created_date      DateTime    @default(now())
+  updated_date      DateTime    @updatedAt
+  partnership       Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  company           Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  athlete           User        @relation("AthleteCompanyReviews", fields: [athlete_id], references: [id], onDelete: Cascade)
+
+  @@index([athlete_id])
+  @@index([company_id])
+  @@index([partnership_id])
+}
+
+model PartnershipReview {
+  id                String      @id @default(cuid())
+  partnership_id    String      @unique
+  company_id        String
+  athlete_id        String
+  star_rating       Int         // 1-5
+  written_feedback  String?     @db.Text
+  would_hire_again  Boolean
+  created_date      DateTime    @default(now())
+  updated_date      DateTime    @updatedAt
+  partnership       Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  company           Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  athlete           User        @relation("AthleteReviews", fields: [athlete_id], references: [id], onDelete: Cascade)
+
+  @@index([athlete_id])
+  @@index([company_id])
+  @@index([partnership_id])
+}
+
+model Application {
+  id                    String               @id @default(cuid())
+  athlete_id            String
+  company_id            String
+  job_id                String?
+  status                String               @default("applied")
+  cover_letter          String?
+  resume_url            String?
+  custom_form_responses Json?                // Custom application form responses
+  offer_expires_at      DateTime?            // 7-day expiration timer for offers
+  offer_total_stipend   Decimal?             @db.Decimal(10, 2) // Stored when company extends offer
+  offer_athlete_payment Decimal?             @db.Decimal(10, 2) // Stored when company extends offer
+  offer_bridged_fee     Decimal?             @db.Decimal(10, 2) // Stored when company extends offer
+  offer_company_cost    Decimal?             @db.Decimal(10, 2) // Stored when company extends offer
+  offer_start_date      DateTime?            // Stored when company extends offer
+  offer_end_date        DateTime?            // Stored when company extends offer
+  created_date          DateTime             @default(now())
+  updated_date          DateTime             @updatedAt
+  athlete               User                 @relation(fields: [athlete_id], references: [id])
+  company               Company              @relation(fields: [company_id], references: [id])
+  job                   Job?                 @relation(fields: [job_id], references: [id])
+  meetings              PartnershipMeeting[]
+
+  @@index([athlete_id])
+  @@index([company_id])
+  @@index([status])
+  @@index([offer_expires_at])
+}
+
+model Job {
+  id                   String        @id @default(cuid())
+  company_id           String
+  title                String
+  description          String
+  requirements         String?
+  type                 String
+  status               String        @default("active")
+  created_date         DateTime      @default(now())
+  updated_date         DateTime      @updatedAt
+  intern_description   String?
+  internship_deadline  String?
+  internship_plan_name String?
+  internship_stipend   Decimal?      @db.Decimal(10, 2) // Total stipend amount (minimum $250)
+  preferred_majors     String[]      @default([])
+  responsibilities     String?
+  work_location        String?
+  start_date           DateTime?
+  duration_months      Int?
+  requires_custom_application Boolean @default(false) // If true, use custom form; if false, use quick apply
+  application_form_fields Json?      // Custom application form configuration
+  applications         Application[]
+  company              Company       @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+  @@index([status])
+  @@index([type])
+}
+
+model Conversation {
+  id                     String                    @id @default(cuid())
+  partnership_id         String?                   @unique
+  last_message_content   String?
+  last_message_sender_id String?
+  last_message_timestamp DateTime?
+  created_date           DateTime                  @default(now())
+  updated_date           DateTime                  @updatedAt
+  athlete_id             String?
+  company_id             String?
+  athlete                User?                     @relation("AthleteConversations", fields: [athlete_id], references: [id])
+  company                Company?                  @relation(fields: [company_id], references: [id])
+  partnership            Partnership?              @relation(fields: [partnership_id], references: [id])
+  participants           ConversationParticipant[]
+  messages               Message[]
+
+  @@index([athlete_id])
+  @@index([company_id])
+  @@index([last_message_timestamp])
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  conversation_id String
+  sender_id       String
+  content         String?
+  file_url        String?
+  created_date    DateTime     @default(now())
+  conversation    Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender          User         @relation(fields: [sender_id], references: [id])
+
+  @@index([conversation_id])
+  @@index([sender_id])
+}
+
+model ConversationParticipant {
+  id              String       @id @default(cuid())
+  conversation_id String
+  user_id         String
+  last_read_at    DateTime?
+  unread_count    Int          @default(0)
+  conversation    Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, user_id])
+  @@index([user_id])
+  @@index([conversation_id])
+}
+
+model Deliverable {
+  id              String          @id @default(cuid())
+  partnership_id  String
+  title           String
+  description     String?
+  submission_url  String?
+  submission_text String?
+  due_date        DateTime?
+  status          String          @default("pending")
+  feedback        String?
+  submission_method String        @default("link") // link | file
+  google_meet_link  String?
+  payout_amount   Decimal?        @db.Decimal(10, 2) // Stipend amount assigned to this deliverable
+  bonus_amount    Decimal?        @db.Decimal(10, 2) // Optional bonus amount (paid only after approval)
+  created_date    DateTime        @default(now())
+  updated_date    DateTime        @updatedAt
+  partnership     Partnership     @relation(fields: [partnership_id], references: [id])
+  attachments     DeliverableAttachment[]
+  warnings        PartnershipWarning[]
+  payouts         AthletePayout[]
+
+  @@index([partnership_id])
+  @@index([status])
+}
+
+model DeliverableAttachment {
+  id             String     @id @default(cuid())
+  deliverable_id String
+  uploaded_by    String
+  type           String     // company_doc | proof_of_work | submission
+  file_name      String
+  file_url       String
+  created_date   DateTime   @default(now())
+  deliverable    Deliverable @relation(fields: [deliverable_id], references: [id], onDelete: Cascade)
+  uploader       User       @relation(fields: [uploaded_by], references: [id])
+
+  @@index([deliverable_id])
+  @@index([uploaded_by])
+  @@index([type])
+}
+
+model PartnershipWarning {
+  id             String      @id @default(cuid())
+  partnership_id String
+  deliverable_id String?
+  created_by     String
+  reason         String
+  created_date   DateTime    @default(now())
+  partnership    Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  deliverable    Deliverable? @relation(fields: [deliverable_id], references: [id], onDelete: SetNull)
+  creator        User        @relation(fields: [created_by], references: [id])
+
+  @@index([partnership_id])
+  @@index([deliverable_id])
+  @@index([created_by])
+}
+
+model CompanySubscription {
+  id                     String    @id @default(cuid())
+  company_id             String    @unique
+  stripe_subscription_id String?   @unique
+  stripe_customer_id     String?
+  status                 String
+  current_period_end     DateTime?
+  created_date           DateTime  @default(now())
+  updated_date           DateTime  @updatedAt
+  company                Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([stripe_subscription_id])
+}
+
+model Payment {
+  id                String       @id @default(cuid())
+  partnership_id    String?
+  stripe_payment_id String?      @unique
+  amount            Decimal      @db.Decimal(10, 2)
+  currency          String       @default("usd")
+  status            String
+  type              String
+  created_date      DateTime     @default(now())
+  partnership       Partnership? @relation(fields: [partnership_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([stripe_payment_id])
+  @@index([status])
+}
+
+model VerificationRequest {
+  id                        String    @id @default(cuid())
+  user_id                   String    @unique
+  verification_token        String    @unique
+  athletic_department_email String
+  name                      String?
+  school                    String?
+  sport                     String?
+  graduation_year           String?
+  photo_url                 String?
+  status                    String    @default("pending")
+  rejection_reason          String?
+  expires_at                DateTime
+  created_date              DateTime  @default(now())
+  processed_date            DateTime?
+  last_resend_date          DateTime?
+  user                      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([verification_token])
+  @@index([status])
+}
+
+model SaacVerificationRequest {
+  id                  String    @id @default(cuid())
+  user_id             String    @unique
+  verification_token  String    @unique
+  saac_email          String
+  name                String?
+  school              String?
+  sport               String?
+  graduation_year     String?
+  photo_url           String?
+  status              String    @default("pending")
+  rejection_reason    String?
+  expires_at          DateTime
+  created_date        DateTime  @default(now())
+  processed_date      DateTime?
+  last_resend_date    DateTime?
+  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([verification_token])
+  @@index([status])
+}
+
+model AffiliateCampaign {
+  id            String                 @id @default(cuid())
+  company_id    String
+  title         String
+  description   String?
+  discount_code String
+  status        String                 @default("Active")
+  created_date  DateTime               @default(now())
+  updated_date  DateTime               @updatedAt
+  company       Company                @relation(fields: [company_id], references: [id])
+  partnerships  AffiliatePartnership[]
+
+  @@index([company_id])
+  @@index([status])
+}
+
+model AffiliateOpportunity {
+  id                  String                 @id @default(cuid())
+  company_id          String
+  title               String
+  product_category    String?                // e.g. Fitness, Fashion, Tech, Beauty
+  product_sent        Boolean                @default(false)
+  product_details     String?
+  status              String                 @default("active")
+  created_date        DateTime               @default(now())
+  updated_date        DateTime               @updatedAt
+  affiliate_criteria  String?
+  affiliate_discount  String?
+  affiliate_return    String?
+  minimum_followers   String?
+  applications        AffiliateApplication[]
+  partnerships        AffiliatePartnership[]
+  company             Company                @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+  @@index([status])
+}
+
+model AffiliateApplication {
+  id                  String               @id @default(cuid())
+  opportunity_id      String
+  athlete_id          String
+  status              String               @default("pending")
+  assigned_code       String?
+  assigned_at         DateTime?
+  offer_expires_at    DateTime?            // Athlete has 7 days to accept
+  payment_method_id   String?             // Stored when company assigns, used when athlete accepts
+  created_date        DateTime            @default(now())
+  updated_date        DateTime            @updatedAt
+  athlete             User                @relation(fields: [athlete_id], references: [id])
+  opportunity         AffiliateOpportunity @relation(fields: [opportunity_id], references: [id])
+  partnership         AffiliatePartnership?
+  payment_method      PaymentMethod?      @relation(fields: [payment_method_id], references: [id], onDelete: SetNull)
+
+  @@unique([opportunity_id, athlete_id])
+  @@index([opportunity_id])
+  @@index([athlete_id])
+  @@index([status])
+}
+
+model AffiliatePartnership {
+  id                  String                      @id @default(cuid())
+  campaign_id         String?                     // Optional: for campaign-based flow
+  opportunity_id      String?                     // Optional: for opportunity-based flow (apply → assign → accept)
+  company_id          String?                     // For opportunity-based: company from opportunity
+  application_id     String?                     @unique // Links to AffiliateApplication (opportunity flow)
+  athlete_id         String
+  athlete_code       String                      @unique
+  payment_method_id   String?                     // Payment method for payouts (opportunity flow)
+  start_date         DateTime?                   // When partnership became active
+  end_date           DateTime?
+  ended_at           DateTime?                   // When partnership was actually ended
+  ended_by           String?                     // User id of who ended it
+  end_reason         String?                     @db.Text
+  end_requested_at   DateTime?                  // When 7-day notice was given
+  end_requested_by   String?                     // User id who requested end
+  end_effective_date DateTime?                  // When partnership will end (requested_at + 7 days)
+  status             String                      @default("pending")
+  clicks             Int                         @default(0)
+  purchases          Int                         @default(0)
+  revenue_earned     Decimal                     @default(0) @db.Decimal(10, 2)
+  total_conversions   Int?                       @default(0)  // Manual reporting
+  total_sales        Decimal?                    @db.Decimal(10, 2)  // Manual reporting
+  performance_summary String?
+  compensation_earned Decimal                    @default(0) @db.Decimal(10, 2)
+  commission_paid    Decimal                     @default(0) @db.Decimal(10, 2)
+  payout_status      String                      @default("pending")
+  paid_at            DateTime?
+  created_date       DateTime                    @default(now())
+  updated_date       DateTime                    @updatedAt
+  commission_rate    Decimal                     @default(0.10) @db.Decimal(5, 4)
+  application        AffiliateApplication?       @relation(fields: [application_id], references: [id])
+  athlete            User                        @relation(fields: [athlete_id], references: [id])
+  campaign           AffiliateCampaign?          @relation(fields: [campaign_id], references: [id])
+  opportunity        AffiliateOpportunity?       @relation(fields: [opportunity_id], references: [id])
+  company            Company?                    @relation(fields: [company_id], references: [id])
+  payment_method     PaymentMethod?              @relation(fields: [payment_method_id], references: [id], onDelete: SetNull)
+  click_events       AffiliateClick[]
+  commission_payouts AffiliateCommissionPayout[]
+  purchase_events    AffiliatePurchase[]
+  sub_codes          AthleteSubCode[]
+  monthly_deliverables AffiliateMonthlyDeliverable[]
+
+  @@index([campaign_id])
+  @@index([opportunity_id])
+  @@index([company_id])
+  @@index([application_id])
+  @@index([athlete_id])
+  @@index([payment_method_id])
+  @@index([status])
+}
+
+model AffiliateMonthlyDeliverable {
+  id                        String               @id @default(cuid())
+  partnership_id             String
+  month                      Int                  // 1-12
+  year                       Int
+  // Company submission
+  company_report_url         String?              // PDF of product report
+  company_products_sold     Int?
+  company_revenue            Decimal?             @db.Decimal(12, 2)
+  company_submitted_at      DateTime?
+  // Athlete feedback (5 questions)
+  athlete_audience_response String?              @db.Text   // Q1: How did audience respond?
+  athlete_questions_concerns String?              @db.Text   // Q2: Questions/concerns from followers?
+  athlete_what_worked       String?              @db.Text   // Q3: What worked well?
+  athlete_improvements      String?              @db.Text   // Q4: What could be improved?
+  athlete_suggestions       String?              @db.Text   // Q5: Suggestions for campaign adjustments?
+  athlete_feedback_file_url String?              // Optional PDF upload
+  athlete_submitted_at      DateTime?
+  // Approval & payout
+  status                     String               @default("pending_company")  // pending_company | pending_athlete | pending_approval | approved
+  payout_amount             Decimal?              @db.Decimal(10, 2)
+  approved_at               DateTime?
+  approved_by               String?
+  payout_paid_at            DateTime?             // When Bridged disbursed to athlete
+  created_date               DateTime             @default(now())
+  updated_date               DateTime             @updatedAt
+  partnership                AffiliatePartnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+
+  @@unique([partnership_id, month, year])
+  @@index([partnership_id])
+  @@index([status])
+}
+
+model ContentPartnership {
+  id                String           @id @default(cuid())
+  company_id        String
+  proposal_id       String?          @unique
+  status            String           @default("pending")
+  fee               Decimal          @default(625) @db.Decimal(10, 2)
+  stripe_payment_id String?
+  created_date      DateTime         @default(now())
+  updated_date      DateTime         @updatedAt
+  company           Company          @relation(fields: [company_id], references: [id])
+  proposal          ContentProposal? @relation(fields: [proposal_id], references: [id])
+
+  @@index([company_id])
+  @@index([status])
+}
+
+model ContentProposal {
+  id                String              @id @default(cuid())
+  company_id        String?
+  athlete_id        String?
+  title             String
+  description       String?
+  proposal_file_url String?
+  status            String              @default("pending")
+  created_date      DateTime            @default(now())
+  updated_date      DateTime            @updatedAt
+  partnership       ContentPartnership?
+  company           Company?            @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+  @@index([status])
+}
+
+model PartnershipApplication {
+  id                       String   @id @default(cuid())
+  type                     String
+  company_id               String?
+  athlete_id               String?
+  company_name             String?
+  company_headquarters     String?
+  contact_name             String?
+  contact_email            String?
+  website                  String?
+  product_name             String?
+  athlete_preference       String?
+  campaign_goal            String?
+  campaign_message         String?
+  campaign_vision          String?
+  brand_assets_url         String?
+  preferred_meeting_time_1 String?
+  preferred_meeting_time_2 String?
+  preferred_meeting_time_3 String?
+  cover_letter             String?
+  resume_url               String?
+  status                   String   @default("pending")
+  created_date             DateTime @default(now())
+  updated_date             DateTime @updatedAt
+  company                  Company? @relation(fields: [company_id], references: [id])
+
+  @@index([status])
+}
+
+model ModelListEntry {
+  id            String   @id @default(cuid())
+  athlete_id    String   @unique
+  status        String   @default("pending")
+  portfolio_url String?
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+  athlete       User     @relation(fields: [athlete_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model BlogPost {
+  id                 String   @id @default(cuid())
+  title              String
+  slug               String   @unique
+  content            String
+  excerpt            String?
+  author             String   @default("Bridged PR")
+  featured_image_url String?
+  is_featured        Boolean  @default(false)
+  published          Boolean  @default(false)
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([is_featured])
+  @@index([published])
+}
+
+model Newsletter {
+  id              String    @id @default(cuid())
+  subject         String
+  content         String
+  target_audience String
+  scheduled_time  DateTime?
+  status          String    @default("draft")
+  created_date    DateTime  @default(now())
+  sent_date       DateTime?
+
+  @@index([status])
+}
+
 model NewsletterSubscriber {
   id                String    @id @default(cuid())
   email             String    @unique
@@ -15,4 +699,363 @@ model NewsletterSubscriber {
   unsubscribed_date DateTime?
 
   @@index([email])
+}
+
+model NewsletterImage {
+  id        String   @id @default(cuid())
+  data      Bytes
+  mimeType  String
+  filename  String   @default("image.jpg")
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  user_id      String?
+  title        String
+  message      String
+  type         String
+  read         Boolean  @default(false)
+  created_date DateTime @default(now())
+
+  @@index([user_id])
+  @@index([read])
+}
+
+model EmailLog {
+  id              String   @id @default(cuid())
+  recipient_email String
+  subject         String
+  status          String
+  error_message   String?
+  related_event   String?
+  created_date    DateTime @default(now())
+
+  @@index([recipient_email])
+  @@index([status])
+}
+
+
+model PlatformSetting {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  value        String
+  updated_date DateTime @updatedAt
+}
+
+model AffiliateBrand {
+  id           String   @id @default(cuid())
+  name         String
+  logo_url     String?
+  description  String?
+  created_date DateTime @default(now())
+}
+
+model PartnershipMeeting {
+  id                 String       @id @default(cuid())
+  partnership_id     String?
+  scheduled_by       String
+  date               DateTime
+  time               String
+  notes              String?
+  meeting_link       String?
+  include_admin      Boolean      @default(false)
+  status             String       @default("scheduled")
+  created_date       DateTime     @default(now())
+  updated_date       DateTime     @updatedAt
+  admin_decision     String?
+  admin_responded_at DateTime?
+  meeting_platform   String?
+  application_id     String?
+  interview_number   Int          @default(1)
+  interview_type     String?
+  completed_at       DateTime?
+  application        Application? @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  partnership        Partnership? @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  scheduler          User         @relation(fields: [scheduled_by], references: [id])
+
+  @@index([partnership_id])
+  @@index([application_id])
+  @@index([scheduled_by])
+  @@index([status])
+  @@index([include_admin])
+  @@index([admin_decision])
+  @@index([interview_number])
+}
+
+model PartnershipDocument {
+  id                 String             @id @default(cuid())
+  partnership_id     String
+  uploaded_by        String
+  document_type      String
+  file_name          String
+  file_url           String?
+  content            String?            // For template-based documents
+  template_id        String?            // Reference to DocumentTemplate if generated from template
+  status             String             @default("pending")
+  requires_signature Boolean            @default(false)
+  created_date       DateTime           @default(now())
+  updated_date       DateTime           @updatedAt
+  signatures         DigitalSignature[]
+  partnership        Partnership        @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  uploader           User               @relation(fields: [uploaded_by], references: [id])
+  template           DocumentTemplate?  @relation(fields: [template_id], references: [id], onDelete: SetNull)
+
+  @@index([partnership_id])
+  @@index([uploaded_by])
+  @@index([document_type])
+  @@index([template_id])
+}
+
+// Document templates for the 7 standard documents
+model DocumentTemplate {
+  id                String               @id @default(cuid())
+  template_type     String               @unique // 'athlete_onboarding', 'company_onboarding', 'master_work_agreement', 'terms_conditions', 'payment_policy', 'nda', 'dispute_resolution'
+  title             String
+  content           String               // Full document content with placeholders
+  version           Int                  @default(1)
+  is_active         Boolean              @default(true)
+  required_for      String[]             @default([]) // ['athlete', 'company', 'partnership']
+  created_date      DateTime             @default(now())
+  updated_date      DateTime             @updatedAt
+  documents         PartnershipDocument[]
+  user_documents    UserDocument[]
+
+  @@index([template_type])
+  @@index([is_active])
+}
+
+// Track which onboarding documents users have signed
+model UserDocument {
+  id                String           @id @default(cuid())
+  user_id           String
+  template_id       String
+  content           String           // Snapshot of document content at time of signing
+  status            String           @default("pending") // 'pending', 'signed', 'expired'
+  signed_at         DateTime?
+  created_date      DateTime         @default(now())
+  updated_date      DateTime         @updatedAt
+  user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  template          DocumentTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  signatures        UserDocumentSignature[]
+
+  @@unique([user_id, template_id])
+  @@index([user_id])
+  @@index([template_id])
+  @@index([status])
+}
+
+// Signatures for user-level documents (onboarding)
+model UserDocumentSignature {
+  id              String       @id @default(cuid())
+  user_document_id String
+  user_id         String
+  signature       String
+  ip_address      String?
+  signed_at       DateTime     @default(now())
+  user_document   UserDocument @relation(fields: [user_document_id], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [user_id], references: [id])
+
+  @@unique([user_document_id, user_id])
+  @@index([user_document_id])
+  @@index([user_id])
+}
+
+model DigitalSignature {
+  id          String              @id @default(cuid())
+  document_id String
+  user_id     String
+  signature   String
+  ip_address  String?
+  signed_at   DateTime            @default(now())
+  document    PartnershipDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [user_id], references: [id])
+
+  @@unique([document_id, user_id])
+  @@index([document_id])
+  @@index([user_id])
+}
+
+model PartnershipProgress {
+  id             String      @id @default(cuid())
+  partnership_id String
+  week_number    Int
+  summary        String?
+  hours_worked   Decimal?    @db.Decimal(5, 2)
+  feedback       String?
+  status         String      @default("in_progress")
+  created_date   DateTime    @default(now())
+  updated_date   DateTime    @updatedAt
+  partnership    Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+
+  @@unique([partnership_id, week_number])
+  @@index([partnership_id])
+}
+
+model AthletePayout {
+  id               String      @id @default(cuid())
+  partnership_id   String
+  athlete_id       String
+  deliverable_id    String?     // Link to deliverable if payout is deliverable-based
+  period_start     DateTime
+  period_end       DateTime
+  gross_amount     Decimal     @db.Decimal(10, 2)
+  bridged_fee      Decimal     @db.Decimal(10, 2)
+  net_amount       Decimal     @db.Decimal(10, 2)
+  status           String      @default("pending")
+  payout_method    String?
+  payout_reference String?
+  paid_date        DateTime?
+  created_date     DateTime    @default(now())
+  updated_date     DateTime    @updatedAt
+  athlete          User        @relation(fields: [athlete_id], references: [id])
+  partnership      Partnership @relation(fields: [partnership_id], references: [id])
+  deliverable      Deliverable? @relation(fields: [deliverable_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([athlete_id])
+  @@index([status])
+  @@index([period_start, period_end])
+  @@index([deliverable_id])
+}
+
+model AffiliateClick {
+  id             String               @id @default(cuid())
+  partnership_id String
+  athlete_code   String
+  ip_address     String?
+  user_agent     String?
+  referrer_url   String?
+  landing_url    String?
+  clicked_at     DateTime             @default(now())
+  partnership    AffiliatePartnership @relation(fields: [partnership_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([athlete_code])
+  @@index([clicked_at])
+}
+
+model AffiliatePurchase {
+  id                 String               @id @default(cuid())
+  partnership_id     String
+  athlete_code       String
+  order_id           String?              @unique
+  order_amount       Decimal              @db.Decimal(10, 2)
+  commission_rate    Decimal              @db.Decimal(5, 4)
+  athlete_commission Decimal              @db.Decimal(10, 2)
+  bridged_commission Decimal              @db.Decimal(10, 2)
+  status             String               @default("pending")
+  purchased_at       DateTime             @default(now())
+  confirmed_at       DateTime?
+  paid_at            DateTime?
+  partnership        AffiliatePartnership @relation(fields: [partnership_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([athlete_code])
+  @@index([status])
+  @@index([purchased_at])
+}
+
+model AthleteSubCode {
+  id             String               @id @default(cuid())
+  partnership_id String
+  parent_code    String
+  sub_code       String               @unique
+  label          String?
+  clicks         Int                  @default(0)
+  purchases      Int                  @default(0)
+  revenue        Decimal              @default(0) @db.Decimal(10, 2)
+  active         Boolean              @default(true)
+  created_date   DateTime             @default(now())
+  updated_date   DateTime             @updatedAt
+  partnership    AffiliatePartnership @relation(fields: [partnership_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([parent_code])
+  @@index([sub_code])
+}
+
+model AffiliateCommissionPayout {
+  id               String               @id @default(cuid())
+  partnership_id   String
+  athlete_id       String
+  period_start     DateTime
+  period_end       DateTime
+  total_revenue    Decimal              @db.Decimal(10, 2)
+  gross_commission Decimal              @db.Decimal(10, 2)
+  bridged_fee      Decimal              @db.Decimal(10, 2)
+  net_payout       Decimal              @db.Decimal(10, 2)
+  status           String               @default("pending")
+  paid_date        DateTime?
+  created_date     DateTime             @default(now())
+  updated_date     DateTime             @updatedAt
+  athlete          User                 @relation(fields: [athlete_id], references: [id])
+  partnership      AffiliatePartnership @relation(fields: [partnership_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([athlete_id])
+  @@index([status])
+}
+
+model PartnershipPacket {
+  id                    String      @id @default(cuid())
+  partnership_id        String      @unique
+  packet_type           String
+  generated_url         String?
+  includes_summary      Boolean     @default(true)
+  includes_deliverables Boolean     @default(true)
+  includes_payments     Boolean     @default(true)
+  includes_feedback     Boolean     @default(true)
+  status                String      @default("pending")
+  generated_at          DateTime?
+  created_date          DateTime    @default(now())
+  partnership           Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+
+  @@index([partnership_id])
+  @@index([status])
+}
+
+model HourLog {
+  id             String   @id @default(cuid())
+  partnership_id String
+  athlete_id     String
+  date           DateTime
+  hours          Decimal  @db.Decimal(5, 2)
+  description    String   @db.Text
+  status         String   @default("pending")
+  approved_by    String?
+  approved_at    DateTime?
+  rejection_reason String? @db.Text
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+
+  partnership Partnership @relation(fields: [partnership_id], references: [id], onDelete: Cascade)
+  athlete     User        @relation(fields: [athlete_id], references: [id])
+
+  @@index([partnership_id])
+  @@index([athlete_id])
+  @@index([date])
+  @@index([status])
+}
+
+model PaymentMethod {
+  id                      String                @id @default(cuid())
+  company_id              String
+  payment_type            String                // bank_transfer, paypal, venmo, zelle, stripe, other
+  account_holder_name     String
+  account_identifier      String                // Email for PayPal/Venmo, phone for Zelle, account number for bank
+  routing_number          String?               // For bank transfers only
+  bank_name               String?               // For bank transfers only
+  additional_info         String?               // Any extra details
+  is_default              Boolean               @default(false)
+  status                  String                @default("active") // active, inactive
+  created_date            DateTime              @default(now())
+  updated_date            DateTime              @updatedAt
+  company                 Company               @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  affiliate_applications  AffiliateApplication[]
+  affiliate_partnerships  AffiliatePartnership[]
+
+  @@index([company_id])
+  @@index([status])
+  @@index([is_default])
 }
