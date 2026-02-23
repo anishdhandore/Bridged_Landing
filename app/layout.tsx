@@ -10,6 +10,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Bridged - Empowering Athletes Beyond the Game",
   description: "Connect athletes with companies for internships and partnerships",
+  icons: {
+    icon: "/TransparentLogo.png",
+    apple: "/TransparentLogo.png",
+  },
 };
 
 export default function RootLayout({
