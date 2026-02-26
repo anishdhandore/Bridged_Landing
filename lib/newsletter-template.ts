@@ -196,7 +196,7 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
             <!-- ═══ BE ON THE LOOKOUT ═══ -->
             <tr>
               <td style="padding:18px 24px;background:linear-gradient(135deg,${BANNER_BG},#a8846f);">
-                <div style="font-size:26px;font-family:${SCRIPT_FONT};color:${NAVY};font-weight:400;line-height:1.2;">{{lookout_title}}</div>
+                <div style="font-size:28px;font-weight:900;font-family:${SERIF_FONT};color:${NAVY};line-height:1.2;text-transform:uppercase;">{{lookout_title}}</div>
               </td>
             </tr>
 
