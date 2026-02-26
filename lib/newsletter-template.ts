@@ -85,6 +85,11 @@ function buildBulletsTable(bulletsText: string): string {
 
 export function buildNewsletterHtml(data: NewsletterTemplateData): string {
   const bulletsTable = buildBulletsTable(data.whatsComingBullets)
+  const handleForUrl = data.footerHandle.trim().replace(/^@/, '')
+  const footerHandleHref = `https://instagram.com/${handleForUrl}`
+  const websiteHref = data.websiteUrl.trim().match(/^https?:\/\//i)
+    ? data.websiteUrl.trim()
+    : `https://${data.websiteUrl.trim().replace(/^\/+/, '')}`
 
   const template = `<!doctype html>
 <html>
@@ -104,11 +109,11 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
               <td style="padding:18px 32px;border-bottom:1px solid #d7c9bf;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px 0 0;" width="20%">HOME</td>
-                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px;" width="20%" align="center">ATHLETES</td>
-                    <td style="font-size:20px;font-weight:700;font-family:${SERIF_FONT};letter-spacing:3px;padding:0 18px;" width="20%" align="center">BRIDGED</td>
-                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px;" width="20%" align="center">COMPANIES</td>
-                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 0 0 18px;" width="20%" align="right">ABOUT</td>
+                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px 0 0;" width="20%"><a href="https://bridgedplatform.com" target="_blank" style="color:${NAVY};text-decoration:none;">HOME</a></td>
+                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px;" width="20%" align="center"><a href="https://bridgedplatform.com" target="_blank" style="color:${NAVY};text-decoration:none;">ATHLETES</a></td>
+                    <td style="font-size:20px;font-weight:700;font-family:${SERIF_FONT};letter-spacing:3px;padding:0 18px;" width="20%" align="center"><a href="https://bridgedplatform.com" target="_blank" style="color:${NAVY};text-decoration:none;">BRIDGED</a></td>
+                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 18px;" width="20%" align="center"><a href="https://bridgedplatform.com" target="_blank" style="color:${NAVY};text-decoration:none;">COMPANIES</a></td>
+                    <td style="font-size:11px;letter-spacing:2px;font-weight:600;text-transform:uppercase;padding:0 0 0 18px;" width="20%" align="right"><a href="https://bridgedplatform.com" target="_blank" style="color:${NAVY};text-decoration:none;">ABOUT</a></td>
                   </tr>
                 </table>
               </td>
@@ -267,9 +272,9 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
               <td style="padding:18px 24px;background:${TAN_BG};color:${COPPER};">
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="font-size:12px;color:${COPPER};" width="33%">&#9675; {{footer_handle}}</td>
-                    <td style="font-size:12px;color:${COPPER};" width="34%" align="center">&#9993; {{contact_email}}</td>
-                    <td style="font-size:12px;color:${COPPER};" width="33%" align="right">&#9741; {{website_url}}</td>
+                    <td style="font-size:12px;color:${COPPER};" width="33%">&#9675; <a href="{{footer_handle_href}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{footer_handle}}</a></td>
+                    <td style="font-size:12px;color:${COPPER};" width="34%" align="center">&#9993; <a href="mailto:{{contact_email}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{contact_email}}</a></td>
+                    <td style="font-size:12px;color:${COPPER};" width="33%" align="right">&#9741; <a href="{{website_href}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{website_url}}</a></td>
                   </tr>
                 </table>
               </td>
@@ -321,7 +326,9 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
     .replace('{{partner2_founder}}', sanitizeText(data.partner2Founder))
     .replace('{{partner2_copy}}', sanitizeText(data.partner2Copy))
     .replace('{{partner2_logo_url}}', sanitizeText(data.partner2LogoUrl))
-    .replace('{{footer_handle}}', sanitizeText(data.footerHandle))
-    .replace('{{contact_email}}', sanitizeText(data.contactEmail))
-    .replace('{{website_url}}', sanitizeText(data.websiteUrl))
+    .replace(/\{\{footer_handle\}\}/g, sanitizeText(data.footerHandle))
+    .replace(/\{\{footer_handle_href\}\}/g, escapeHtml(footerHandleHref))
+    .replace(/\{\{contact_email\}\}/g, sanitizeText(data.contactEmail))
+    .replace(/\{\{website_url\}\}/g, sanitizeText(data.websiteUrl))
+    .replace(/\{\{website_href\}\}/g, escapeHtml(websiteHref))
 }
