@@ -5,13 +5,18 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-/** Rewrite localhost newsletter-image URLs to production so images display in emails (Gmail etc block data URIs) */
+/** Rewrite image URLs so they work in email: localhost API URLs → production, and relative paths → absolute. */
 function rewriteImageUrlsForEmail(html: string): string {
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://bridgedplatform.com').replace(/\/$/, '')
-  return html.replace(
+  let out = html.replace(
     /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/newsletter-images\/([a-zA-Z0-9_-]+)(\.(jpg|jpeg|png|gif|webp))?/gi,
     `${baseUrl}/api/newsletter-images/$3$4`
   )
+  out = out.replace(
+    /(src=)(["'])(\/[^"']+\.(jpg|jpeg|png|gif|webp))(\2)/gi,
+    (_, attr, quote, path) => `${attr}${quote}${baseUrl}${path}${quote}`
+  )
+  return out
 }
 
 export async function POST(request: NextRequest) {
