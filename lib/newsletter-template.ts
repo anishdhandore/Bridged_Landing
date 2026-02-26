@@ -195,7 +195,7 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
 
             <!-- ═══ BE ON THE LOOKOUT ═══ -->
             <tr>
-              <td style="padding:18px 24px;background:linear-gradient(135deg,${BANNER_BG},#a8846f);">
+              <td style="padding:18px 24px;background:linear-gradient(90deg,${TAN_BG} 0%,${DIVIDER} 25%,${BANNER_BG} 55%);">
                 <div style="font-size:28px;font-weight:900;font-family:${SERIF_FONT};color:${NAVY};line-height:1.2;text-transform:uppercase;">{{lookout_title}}</div>
               </td>
             </tr>
@@ -212,7 +212,7 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
                     <td width="4%"></td>
                     <!-- Right: What's coming -->
                     <td width="50%" valign="top">
-                      <div style="font-size:24px;font-family:${SCRIPT_FONT};color:${COPPER};line-height:1.2;margin:0 0 12px 0;">{{whats_coming_title}}</div>
+                      <div style="font-size:22px;font-weight:300;font-family:${BODY_FONT};letter-spacing:1.5px;color:${COPPER};line-height:1.2;margin:0 0 12px 0;text-transform:uppercase;">{{whats_coming_title}}</div>
                       <p style="font-size:12.5px;line-height:1.6;margin:0 0 8px 0;color:#333;">{{whats_coming_intro}}</p>
                       <table cellpadding="0" cellspacing="0" style="font-size:12.5px;line-height:1.7;color:#333;">{{whats_coming_bullets}}</table>
                       <p style="font-size:12.5px;line-height:1.6;margin:12px 0 0 0;color:#333;">{{whats_coming_closing}}</p>
@@ -224,7 +224,7 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
 
             <!-- ═══ PARTNERSHIP SPOTLIGHTS BANNER ═══ -->
             <tr>
-              <td style="padding:18px 24px;background:linear-gradient(135deg,${BANNER_BG},#a8846f);">
+              <td style="padding:18px 24px;background:linear-gradient(90deg,${TAN_BG} 0%,${DIVIDER} 25%,${BANNER_BG} 55%);">
                 <div style="font-size:28px;font-weight:900;font-family:${SERIF_FONT};color:${NAVY};line-height:1.2;text-transform:uppercase;">{{partnership_title}}</div>
               </td>
             </tr>
@@ -261,12 +261,15 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
 
             <!-- ═══ FOOTER ═══ -->
             <tr>
-              <td style="padding:18px 24px;background:${FOOTER_BG};color:#ffffff;">
+              <td style="padding:0;border-top:1px solid #000000;"></td>
+            </tr>
+            <tr>
+              <td style="padding:18px 24px;background:${TAN_BG};color:${COPPER};">
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="font-size:12px;color:#ccc;" width="33%">&#9675; {{footer_handle}}</td>
-                    <td style="font-size:12px;color:#ccc;" width="34%" align="center">&#9993; {{contact_email}}</td>
-                    <td style="font-size:12px;color:#ccc;" width="33%" align="right">&#9741; {{website_url}}</td>
+                    <td style="font-size:12px;color:${COPPER};" width="33%">&#9675; {{footer_handle}}</td>
+                    <td style="font-size:12px;color:${COPPER};" width="34%" align="center">&#9993; {{contact_email}}</td>
+                    <td style="font-size:12px;color:${COPPER};" width="33%" align="right">&#9741; {{website_url}}</td>
                   </tr>
                 </table>
               </td>
