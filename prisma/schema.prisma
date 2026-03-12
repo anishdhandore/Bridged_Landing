@@ -185,6 +185,12 @@ model CompanyReview {
   @@index([partnership_id])
 }
 
+model NewsletterTemplateState {
+  id        String   @id @default("default")
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
 model PartnershipReview {
   id                String      @id @default(cuid())
   partnership_id    String      @unique

@@ -44,10 +44,13 @@ export type NewsletterTemplateData = {
   partner2Founder: string
   partner2Copy: string
   partner2LogoUrl: string
-  // Footer
+  // Footer — titles and URLs editable (defaults used when URL empty)
   footerHandle: string
   contactEmail: string
   websiteUrl: string
+  footerLink1Url?: string
+  footerLink2Url?: string
+  footerLink3Url?: string
 }
 
 const escapeHtml = (value: string) =>
@@ -59,6 +62,69 @@ const escapeHtml = (value: string) =>
     .replace(/'/g, '&#039;')
 
 const sanitizeText = (value: string) => escapeHtml(value.trim())
+
+// Normalize URL for links: https/http as-is, www. -> https://, email -> mailto:
+const normalizeLinkUrl = (raw: string): string => {
+  const t = raw.trim()
+  if (!t) return '#'
+  if (/^https?:\/\//i.test(t)) return t
+  if (/^www\./i.test(t)) return `https://${t}`
+  if (t.includes('@') && !/\s/.test(t)) return `mailto:${t}`
+  return `https://${t}`
+}
+
+// Markdown-style links: [link text](url) -> placeholder (processed after escaping)
+const MARKDOWN_LINK_REGEX = /\[([^\]]*)\]\(([^)]*)\)/g
+const LINK_PLACEHOLDER_PREFIX = '\u0000LINK'
+const LINK_PLACEHOLDER_SUFFIX = '\u0000'
+
+function processMarkdownLinks(raw: string): { text: string; links: string[] } {
+  const links: string[] = []
+  const text = raw.replace(MARKDOWN_LINK_REGEX, (_, linkText: string, url: string) => {
+    const href = normalizeLinkUrl(url)
+    const safeHtml = `<a href="${escapeHtml(href)}" target="_blank" style="color:${COPPER};text-decoration:underline;">${escapeHtml(linkText.trim())}</a>`
+    links.push(safeHtml)
+    return `${LINK_PLACEHOLDER_PREFIX}${links.length - 1}${LINK_PLACEHOLDER_SUFFIX}`
+  })
+  return { text, links }
+}
+
+function restoreMarkdownLinks(escaped: string, links: string[]): string {
+  let out = escaped
+  links.forEach((html, i) => {
+    out = out.replace(`${LINK_PLACEHOLDER_PREFIX}${i}${LINK_PLACEHOLDER_SUFFIX}`, html)
+  })
+  return out
+}
+
+// Simple URL detection: turns raw URLs in text into clickable links.
+const URL_REGEX = /\b((https?:\/\/|www\.)[^\s<]+)/gi
+
+const linkifyEscaped = (escaped: string): string =>
+  escaped.replace(URL_REGEX, (match) => {
+    const href = match.startsWith('http')
+      ? match
+      : `https://${match.replace(/^www\./i, '')}`
+    return `<a href="${href}" target="_blank" style="color:${COPPER};text-decoration:underline;">${match}</a>`
+  })
+
+// Single-line text: supports [text](url) markdown links and bare https/www URLs
+const formatTextWithLinks = (value: string): string => {
+  const trimmed = value.trim()
+  const { text, links } = processMarkdownLinks(trimmed)
+  const escaped = escapeHtml(text)
+  const withBareLinks = linkifyEscaped(escaped)
+  return restoreMarkdownLinks(withBareLinks, links)
+}
+
+// Multi-line text with links and <br/> for newlines
+const formatMultilineWithLinks = (value: string): string => {
+  const trimmed = value.trim()
+  const { text, links } = processMarkdownLinks(trimmed)
+  const escaped = escapeHtml(text).replace(/\n/g, '<br/>')
+  const withBareLinks = linkifyEscaped(escaped)
+  return restoreMarkdownLinks(withBareLinks, links)
+}
 
 const SCRIPT_FONT = "'Brush Script MT','Snell Roundhand','Segoe Script','Lucida Handwriting',cursive"
 const SERIF_FONT = "Georgia,'Times New Roman',serif"
@@ -79,17 +145,43 @@ function buildBulletsTable(bulletsText: string): string {
     .filter(Boolean)
   if (items.length === 0) return ''
   return items
-    .map((item) => `<tr><td style="padding:2px 0;">&#9679;&nbsp; ${escapeHtml(item)}</td></tr>`)
+    .map(
+      (item) =>
+        `<tr><td style="padding:2px 0;">&#9679;&nbsp; ${formatTextWithLinks(
+          item
+        )}</td></tr>`
+    )
     .join('')
 }
 
 export function buildNewsletterHtml(data: NewsletterTemplateData): string {
   const bulletsTable = buildBulletsTable(data.whatsComingBullets)
-  const handleForUrl = data.footerHandle.trim().replace(/^@/, '')
-  const footerHandleHref = `https://instagram.com/${handleForUrl}`
-  const websiteHref = data.websiteUrl.trim().match(/^https?:\/\//i)
-    ? data.websiteUrl.trim()
-    : `https://${data.websiteUrl.trim().replace(/^\/+/, '')}`
+
+  const normalizeHref = (raw: string): string | null => {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
+    if (/^www\./i.test(trimmed)) return `https://${trimmed}`
+    if (trimmed.includes('@') && !/\s/.test(trimmed)) return `mailto:${trimmed}`
+    return `https://${trimmed}`
+  }
+
+  const DEFAULT_LINK1 = 'https://www.instagram.com/bridgedplatform/'
+  const DEFAULT_LINK2 = 'mailto:nbowles@bridged.agency'
+  const DEFAULT_LINK3 = 'https://www.bridgedplatform.com'
+
+  const footerLink1Href =
+    data.footerLink1Url?.trim() && normalizeHref(data.footerLink1Url)
+      ? normalizeHref(data.footerLink1Url)!
+      : DEFAULT_LINK1
+  const footerLink2Href =
+    data.footerLink2Url?.trim() && normalizeHref(data.footerLink2Url)
+      ? normalizeHref(data.footerLink2Url)!
+      : DEFAULT_LINK2
+  const footerLink3Href =
+    data.footerLink3Url?.trim() && normalizeHref(data.footerLink3Url)
+      ? normalizeHref(data.footerLink3Url)!
+      : DEFAULT_LINK3
 
   const template = `<!doctype html>
 <html>
@@ -272,9 +364,22 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
               <td style="padding:18px 24px;background:${TAN_BG};color:${COPPER};">
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="font-size:12px;color:${COPPER};" width="33%">&#9675; <a href="{{footer_handle_href}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{footer_handle}}</a></td>
-                    <td style="font-size:12px;color:${COPPER};" width="34%" align="center">&#9993; <a href="mailto:{{contact_email}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{contact_email}}</a></td>
-                    <td style="font-size:12px;color:${COPPER};" width="33%" align="right">&#9741; <a href="{{website_href}}" target="_blank" style="color:${COPPER};text-decoration:none;">{{website_url}}</a></td>
+                    <td align="center" style="font-size:10px;color:${COPPER};letter-spacing:0.8px;text-transform:uppercase;white-space:nowrap;">
+                      <span style="color:${COPPER};font-size:12px;margin-right:4px;vertical-align:middle;">&#9675;</span>
+                      <a href="{{footer_link1_href}}" target="_blank" style="color:${COPPER};text-decoration:none;vertical-align:middle;">
+                        {{footer_handle}}
+                      </a>
+                      <span style="margin:0 10px;color:${COPPER}80;vertical-align:middle;">•</span>
+                      <span style="color:${COPPER};font-size:12px;margin-right:4px;vertical-align:middle;">&#9993;</span>
+                      <a href="{{footer_link2_href}}" target="_blank" style="color:${COPPER};text-decoration:none;vertical-align:middle;">
+                        {{contact_email}}
+                      </a>
+                      <span style="margin:0 10px;color:${COPPER}80;vertical-align:middle;">•</span>
+                      <span style="color:${COPPER};font-size:12px;margin-right:4px;vertical-align:middle;">&#9741;</span>
+                      <a href="{{footer_link3_href}}" target="_blank" style="color:${COPPER};text-decoration:none;vertical-align:middle;">
+                        {{website_url}}
+                      </a>
+                    </td>
                   </tr>
                 </table>
               </td>
@@ -295,40 +400,47 @@ export function buildNewsletterHtml(data: NewsletterTemplateData): string {
     .replace('{{welcome_badge_text}}', sanitizeText(data.welcomeBadgeText))
     .replace('{{headline}}', sanitizeText(data.headline))
     .replace('{{subheadline}}', sanitizeText(data.subheadline))
-    .replace('{{intro_copy}}', sanitizeText(data.introCopy))
+    .replace('{{intro_copy}}', formatTextWithLinks(data.introCopy))
     .replace('{{athletes_label}}', sanitizeText(data.athletesLabel))
-    .replace('{{athletes_copy}}', sanitizeText(data.athletesCopy))
+    .replace('{{athletes_copy}}', formatTextWithLinks(data.athletesCopy))
     .replace('{{companies_label}}', sanitizeText(data.companiesLabel))
-    .replace('{{companies_copy}}', sanitizeText(data.companiesCopy))
-    .replace('{{hero_tagline}}', sanitizeText(data.heroTagline))
+    .replace('{{companies_copy}}', formatTextWithLinks(data.companiesCopy))
+    .replace('{{hero_tagline}}', formatTextWithLinks(data.heroTagline))
     .replace('{{what_is_bridged_title}}', sanitizeText(data.whatIsBridgedTitle))
     .replace('{{what_is_bridged_subtitle}}', sanitizeText(data.whatIsBridgedSubtitle))
-    .replace('{{what_is_bridged_p1}}', sanitizeText(data.whatIsBridgedP1))
-    .replace('{{what_is_bridged_p2}}', sanitizeText(data.whatIsBridgedP2))
-    .replace('{{what_is_bridged_p3}}', sanitizeText(data.whatIsBridgedP3))
+    .replace('{{what_is_bridged_p1}}', formatTextWithLinks(data.whatIsBridgedP1))
+    .replace('{{what_is_bridged_p2}}', formatTextWithLinks(data.whatIsBridgedP2))
+    .replace('{{what_is_bridged_p3}}', formatTextWithLinks(data.whatIsBridgedP3))
     .replace('{{founder_section_title}}', sanitizeText(data.founderSectionTitle))
     .replace('{{founder_image_url}}', sanitizeText(data.founderImageUrl))
     .replace('{{founder_name}}', sanitizeText(data.founderName))
-    .replace('{{founder_quote}}', sanitizeText(data.founderQuote))
+    .replace('{{founder_quote}}', formatTextWithLinks(data.founderQuote))
     .replace('{{lookout_title}}', sanitizeText(data.lookoutTitle))
     .replace('{{interested_card_url}}', sanitizeText(data.interestedCardUrl))
-    .replace('{{whats_coming_title}}', sanitizeText(data.whatsComingTitle).replace(/\n/g, '<br/>'))
-    .replace('{{whats_coming_intro}}', sanitizeText(data.whatsComingIntro))
+    .replace(
+      '{{whats_coming_title}}',
+      formatMultilineWithLinks(data.whatsComingTitle)
+    )
+    .replace('{{whats_coming_intro}}', formatTextWithLinks(data.whatsComingIntro))
     .replace('{{whats_coming_bullets}}', bulletsTable)
-    .replace('{{whats_coming_closing}}', sanitizeText(data.whatsComingClosing).replace(/\n/g, '<br/>'))
+    .replace(
+      '{{whats_coming_closing}}',
+      formatMultilineWithLinks(data.whatsComingClosing)
+    )
     .replace('{{partnership_title}}', sanitizeText(data.partnershipTitle))
     .replace('{{partnership_subtitle}}', sanitizeText(data.partnershipSubtitle))
     .replace('{{partner1_name}}', sanitizeText(data.partner1Name))
     .replace('{{partner1_founder}}', sanitizeText(data.partner1Founder))
-    .replace('{{partner1_copy}}', sanitizeText(data.partner1Copy))
+    .replace('{{partner1_copy}}', formatTextWithLinks(data.partner1Copy))
     .replace('{{partner1_logo_url}}', sanitizeText(data.partner1LogoUrl))
     .replace('{{partner2_name}}', sanitizeText(data.partner2Name))
     .replace('{{partner2_founder}}', sanitizeText(data.partner2Founder))
-    .replace('{{partner2_copy}}', sanitizeText(data.partner2Copy))
+    .replace('{{partner2_copy}}', formatTextWithLinks(data.partner2Copy))
     .replace('{{partner2_logo_url}}', sanitizeText(data.partner2LogoUrl))
-    .replace(/\{\{footer_handle\}\}/g, sanitizeText(data.footerHandle))
-    .replace(/\{\{footer_handle_href\}\}/g, escapeHtml(footerHandleHref))
+    .replace('{{footer_handle}}', sanitizeText(data.footerHandle))
     .replace(/\{\{contact_email\}\}/g, sanitizeText(data.contactEmail))
     .replace(/\{\{website_url\}\}/g, sanitizeText(data.websiteUrl))
-    .replace(/\{\{website_href\}\}/g, escapeHtml(websiteHref))
+    .replace(/\{\{footer_link1_href\}\}/g, escapeHtml(footerLink1Href))
+    .replace(/\{\{footer_link2_href\}\}/g, escapeHtml(footerLink2Href))
+    .replace(/\{\{footer_link3_href\}\}/g, escapeHtml(footerLink3Href))
 }
